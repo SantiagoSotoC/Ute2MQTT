@@ -1,0 +1,17 @@
+services:
+  ute2mqtt:
+    build: .
+    container_name: ute2mqtt
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - TZ=America/Montevideo
+    volumes:
+      - ./credentials:/app/credentials
+    networks:
+      - default
+
+networks:
+  default:
+    name: ute2mqtt-network
