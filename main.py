@@ -42,6 +42,7 @@ class Ute2MQTT:
         self.service_id = os.environ.get("UTE_SERVICE_ID")
         self.service_point_id = os.environ.get("UTE_SERVICE_POINT_ID")
         self.tariff = os.environ.get("UTE_TARIFF")
+        self.schedule_code = os.environ.get("UTE_SCHEDULE_CODE")
         
         if not all([self.service_id, self.service_point_id, self.tariff]):
             logger.error("Faltan variables de entorno del servicio (UTE_SERVICE_ID, etc). Ejecuta setup.py.")
@@ -74,27 +75,18 @@ class Ute2MQTT:
             logger.error("Falta variable de entorno UTE_ACCOUNT_ID")
             sys.exit(1)
             
+        if self.tariff in ("TRT", "TRD") and not self.schedule_code:
+            logger.error(f"Para tarifa {self.tariff} se requiere UTE_SCHEDULE_CODE en el .env (ej. TRIPLERES19)")
+            sys.exit(1)
+            
         # Inicializar componentes
         self.mqtt: Optional[MQTTPublisher] = None
         self.scheduler: Optional[DailyScheduler] = None
         
         # Caché para información del servicio
-        self.schedule_code: Optional[str] = None
+        # self.schedule_code ya se carga del entorno
     
-    def _ensure_schedule_info(self, client) -> bool:
-        """Determina el código de corte (schedule code) si es necesario."""
-        if self.schedule_code:
-            return True
-            
-        # Determinar codigo de corte
-        peak_config = None
-        if self.tariff in ("TRT", "TRD"):
-            peak_config = client.get_peak_config(self.account_id, self.service_id)
-            
-        self.schedule_code = TariffProcessor.determine_schedule_code(self.tariff, peak_config)
-        
-        logger.info(f"Info del servicio: ID={self.service_id}, Tarifa: {self.tariff}, Corte: {self.schedule_code}")
-        return True
+    
     
     def fetch_and_publish(self):
         """Tarea principal: obtener datos y publicar a MQTT."""
@@ -106,9 +98,7 @@ class Ute2MQTT:
             logger.error("No se pudo establecer sesión con el Proveedor (Credenciales inválidas o error de red)")
             return
         
-        # Obtener info del servicio (schedule code) si no está cacheada
-        if not self._ensure_schedule_info(client):
-            return
+        
         
         # Obtener consumo actual
         consumption = client.get_current_consumption(self.account_id)

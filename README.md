@@ -130,6 +130,8 @@ UTE_ACCOUNT_ID=<ACCOUNT_ID>
 UTE_SERVICE_ID=<SERVICE_ID>
 UTE_SERVICE_POINT_ID=<SERVICE_POINT_ID>
 UTE_TARIFF=<TARIFF>
+# Si tenés tarifa TRT/TRD:
+UTE_SCHEDULE_CODE=<SCHEDULE_CODE>
 ```
 
 > [!IMPORTANT]
@@ -147,6 +149,7 @@ UTE_ACCOUNT_ID=<ACCOUNT_ID>
 UTE_SERVICE_ID=<SERVICE_ID>
 UTE_SERVICE_POINT_ID=<SERVICE_POINT_ID>
 UTE_TARIFF=<TARIFF>
+UTE_SCHEDULE_CODE=<SCHEDULE_CODE>
 
 ENCRYPTION_KEY=abc123def456...
 
@@ -399,6 +402,7 @@ El cliente detecta automáticamente tu tarifa y ajusta los sensores disponibles:
 | `UTE_SERVICE_ID` | ID del servicio (Service Agreement ID) | ✅ | - |
 | `UTE_SERVICE_POINT_ID` | ID del punto de servicio (Service Point ID) | ✅ | - |
 | `UTE_TARIFF` | Tarifa del servicio (TRT, TRD, etc.) | ✅ | - |
+| `UTE_SCHEDULE_CODE` | Código de horario punta (ej. TRIPLERES19). Solo para TRT/TRD | ✅ (si aplica) | - |
 | `ENCRYPTION_KEY` | Clave de cifrado (64 caracteres hex) | ✅ | - |
 | `CREDENTIALS_PATH` | Ruta para almacenar credenciales cifradas | ❌ | `./credentials` |
 | `MQTT_BROKER` | Hostname/IP del broker MQTT | ✅ | - |

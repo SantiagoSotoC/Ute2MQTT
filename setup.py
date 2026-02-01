@@ -18,6 +18,7 @@ from ute.auth import UTEAuthenticator
 from ute.client import UTEClient
 from ute.credentials import CredentialsManager
 from ute.session import UTESession
+from ute.tariffs import TariffProcessor
 
 
 def print_header():
@@ -138,13 +139,14 @@ def save_tokens(auth: UTEAuthenticator, creds_manager: CredentialsManager):
     print("✅ Tokens guardados (cifrados)")
 
 
-def print_instructions(accounts: list, encryption_key: str):
+def print_instructions(account: dict, encryption_key: str, client: UTEClient = None):
     """
     Imprime las instrucciones de configuración para el archivo .env.
     
     Args:
-        accounts: Lista de cuentas encontradas
+        account: La cuenta seleccionada
         encryption_key: Clave de cifrado utilizada/generada
+        client: Cliente API (opcional) para consultas adicionales
     """
     print()
     print("=" * 60)
@@ -159,33 +161,30 @@ def print_instructions(accounts: list, encryption_key: str):
     print(f"ENCRYPTION_KEY={encryption_key}")
     print()
     
-    if len(accounts) == 1:
-        account = accounts[0]
-        account_id = account.get("accountId", "")
-        print(f"UTE_ACCOUNT_ID={account_id}")
+    account_id = account.get("accountId", "")
+    print(f"UTE_ACCOUNT_ID={account_id}")
+    
+    services = account.get("services", [])
+    if services:
+        service = services[0]
+        print(f"UTE_SERVICE_ID={service.get('serviceAgreementId', '')}")
+        print(f"UTE_SERVICE_POINT_ID={service.get('servicePointId', '')}")
+        print(f"UTE_TARIFF={service.get('tariff', '').upper()}")
         
-        services = account.get("services", [])
-        if services:
-            service = services[0]
-            print(f"UTE_SERVICE_ID={service.get('serviceAgreementId', '')}")
-            print(f"UTE_SERVICE_POINT_ID={service.get('servicePointId', '')}")
-            print(f"UTE_TARIFF={service.get('tariff', '').upper()}")
-            
-    else:
-        print("# Elige UNA de las siguientes cuentas:")
-        for account in accounts:
-            account_id = account.get("accountId", "")
-            address = account.get("address", "")
-            print(f"# {address}")
-            print(f"UTE_ACCOUNT_ID={account_id}")
-            
-            services = account.get("services", [])
-            if services:
-                service = services[0]
-                print(f"UTE_SERVICE_ID={service.get('serviceAgreementId', '')}")
-                print(f"UTE_SERVICE_POINT_ID={service.get('servicePointId', '')}")
-                print(f"UTE_TARIFF={service.get('tariff', '').upper()}")
-            print()
+        # Sugerir Schedule Code para tarifas multi-horario
+        tariff = service.get('tariff', '').upper()
+        if tariff in ("TRT", "TRD") and client:
+            try:
+                peak_config = client.get_peak_config(account_id, service.get('serviceAgreementId', ''))
+                if peak_config:
+                    peak_start = peak_config.get("selectedPeakStart") or peak_config.get("meterPeakStart")
+                    code = TariffProcessor.get_schedule_code_from_id(peak_start)
+                    if code:
+                        print(f"UTE_SCHEDULE_CODE={code}")
+                    else:
+                        print(f"# UTE_SCHEDULE_CODE=TRIPLERES19 (No se pudo detectar, valor por defecto)")
+            except Exception as e:
+                    print(f"# Error al detectar horario: {e}")
     
     print("-" * 60)
     print()
@@ -199,13 +198,6 @@ def main():
     
     # Inicializar credentials manager
     creds_path = Path(__file__).parent / "ute/credentials" 
-    # NOTA: Antes estaba en credentials/, ahora movimos credentials.py a ute/credentials.py
-    # pero la ruta de almacenamiento por defecto en credentials.py es "./credentials".
-    # Debemos mantener la ubicación de datos consistente o explícita.
-    # El script de configuración solía inicializar CredsManager con:
-    # creds_path = Path(__file__).parent / "credentials"
-    # El valor por defecto en CredsManager es "./credentials".
-    # Mantendré el directorio de DATOS como está ("credentials" en la raíz).
     
     data_path = Path(__file__).parent / "credentials"
     
@@ -242,11 +234,32 @@ def main():
     # List accounts
     accounts = list_accounts(auth, creds_manager)
     
+    # Seleccionar cuenta
+    if len(accounts) == 1:
+        selected_account = accounts[0]
+        print(f"📌 Seleccionando automáticamente la única cuenta disponible...")
+    else:
+        while True:
+            try:
+                selection = input(f"Seleccione una cuenta (1-{len(accounts)}): ").strip()
+                idx = int(selection) - 1
+                if 0 <= idx < len(accounts):
+                    selected_account = accounts[idx]
+                    break
+                print(f"  Por favor ingrese un número entre 1 y {len(accounts)}")
+            except ValueError:
+                print("  Por favor ingrese un número válido")
+
     # Guardar tokens
     save_tokens(auth, creds_manager)
     
-    # Imprimir instrucciones
-    print_instructions(accounts, encryption_key)
+    # Imprimir instrucciones (pasamos el cliente si está disponible en la sesión temporal)
+    # Necesitamos un cliente para consultar datos extra como el peak config
+    session_tmp = UTESession(creds_manager)
+    session_tmp.auth = auth
+    client_tmp = UTEClient(session_tmp)
+    
+    print_instructions(selected_account, encryption_key, client_tmp)
     
     print("✅ Setup completado!")
     print()
