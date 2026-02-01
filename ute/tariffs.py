@@ -47,16 +47,12 @@ class TariffProcessor:
         return result
 
     @staticmethod
-    def determine_schedule_code(tariff: str, peak_config: Optional[Dict[str, Any]]) -> Optional[str]:
-        """Determina el código de corte (schedule code) basado en la tarifa y config."""
-        if tariff not in ("TRT", "TRD"):
-            return None
-            
-        if peak_config:
-            peak_start = peak_config.get("meterPeakStart", 3)
-            # Mapeo común para TRT y TRD
-            schedule_map = {1: "TRIPLERES17", 2: "TRIPLERES18", 3: "TRIPLERES19"}
-            return schedule_map.get(peak_start, "TRIPLERES19")
-        
-        # Fallback seguro
-        return "TRIPLERES19"
+    def get_schedule_code_from_id(peak_start_id: int) -> Optional[str]:
+        """Convierte el ID numérico de inicio de horario punta a código de tarifa."""
+        # Mapeo de IDs a códigos
+        schedule_map = {
+            1: "TRIPLERES17", 
+            2: "TRIPLERES18", 
+            3: "TRIPLERES19"
+        }
+        return schedule_map.get(peak_start_id)
