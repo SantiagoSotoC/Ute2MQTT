@@ -82,11 +82,20 @@ git clone https://github.com/rodrigocabraln/Ute2MQTT.git
 cd Ute2MQTT
 ```
 
-### Paso 2: Crear carpeta para credenciales
+### Paso 2: Crear carpeta para credenciales y asignar permisos
+
+Es fundamental crear la carpeta manualmente y asignar los permisos correctos para que el proceso dentro de Docker (que corre con el UID 1000) pueda escribir los archivos de sesión cifrados. 
+
+Si omitís este paso o dejás que Docker cree la carpeta automáticamente, se creará como `root` y la aplicación fallará al intentar guardar tus datos.
 
 ```bash
 mkdir -p credentials
+# Asignar permisos al usuario del contenedor (UID 1000)
+sudo chown -R 1000:1000 credentials
 ```
+
+> [!IMPORTANT]
+> **Persistencia:** Esta carpeta es vital. Aquí se guardan tus tokens y configuración cifrada. Si la borrás, tendrás que repetir el proceso de setup.
 
 ### Paso 3: Construir la imagen Docker
 
