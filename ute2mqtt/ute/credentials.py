@@ -64,22 +64,28 @@ class CredentialsManager:
         """
         self.storage_path = Path(storage_path) if storage_path else Path("./credentials")
         
-        # Obtener clave de cifrado (prioridad: argumento > variable de entorno)
+        # Asegurar que existe el directorio de almacenamiento
+        self.storage_path.mkdir(parents=True, exist_ok=True)
+        
+        # Obtener clave de cifrado (prioridad: argumento > variable de entorno > auto-generar)
         self.encryption_key = encryption_key or os.environ.get("ENCRYPTION_KEY")
         
         if not self.encryption_key:
-            raise ValueError(
-                "ENCRYPTION_KEY es requerida. Generar con: openssl rand -hex 32"
-            )
+            # Intentar cargar desde archivo
+            key_file = self.storage_path / "encryption.key"
+            if key_file.exists():
+                self.encryption_key = key_file.read_text().strip()
+            else:
+                # Auto-generar y guardar
+                self.encryption_key = secrets.token_hex(32)
+                key_file.write_text(self.encryption_key)
+                logger.info("Clave de cifrado auto-generada y almacenada")
         
         # Almacenamiento de tokens en memoria
         self._tokens: Dict[str, Any] = {}
         
         # Cache de instancia Fernet (evita recalcular PBKDF2)
         self._fernet: Optional[Fernet] = None
-        
-        # Asegurar que existe el directorio de almacenamiento
-        self.storage_path.mkdir(parents=True, exist_ok=True)
         
         # Cargar salt o generar uno nuevo
         self._salt = self._load_or_create_salt()
