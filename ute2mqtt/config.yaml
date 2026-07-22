@@ -15,7 +15,9 @@ map:
   - type: addon_config
     read_only: false
 ports:
-  8099/tcp: 8099
+  8099/tcp: null
+ingress: true
+webui: "http://[HOST]:[PORT:8099]"
 options:
   mqtt_broker: "core-mosquitto"
   mqtt_port: 1883

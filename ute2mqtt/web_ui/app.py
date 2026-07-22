@@ -2,7 +2,7 @@
 Ute2MQTT - Web UI para configuración del addon.
 
 Proporciona una interfaz web para configurar credenciales de UTE
-y seleccionar cuenta/tarifa.
+y seleccionar cuenta/tarifa. Soporta Ingress de Home Assistant.
 """
 
 import json
@@ -10,8 +10,10 @@ import logging
 import os
 import sys
 import secrets
+import hashlib
+import hmac
 
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, abort
 
 sys.path.insert(0, "/app")
 
@@ -26,6 +28,29 @@ app.secret_key = secrets.token_hex(32)
 
 CREDENTIALS_PATH = os.environ.get("CREDENTIALS_PATH", "/data/ute2mqtt")
 creds_manager = CredentialsManager(storage_path=CREDENTIALS_PATH)
+
+# Ingress token from HA
+INGRESS_TOKEN = os.environ.get("INGRESS_TOKEN", None)
+
+
+def check_ingress():
+    """Verifica token de ingress si está configurado."""
+    if not INGRESS_TOKEN:
+        return True  # No auth required (direct access)
+    token = request.headers.get("X-Ingress-Token") or request.args.get("token")
+    if not token:
+        return False
+    return hmac.compare_digest(token, INGRESS_TOKEN)
+
+
+@app.before_request
+def before_request():
+    """Middleware para verificar autenticación."""
+    # Si hay INGRESS_TOKEN configurado, verificar en cada request
+    if INGRESS_TOKEN and request.path != "/api/health":
+        token = request.headers.get("X-Ingress-Token") or request.args.get("token")
+        if not token or not hmac.compare_digest(token, INGRESS_TOKEN):
+            abort(401)
 
 
 @app.route("/")
@@ -46,6 +71,12 @@ def index():
         has_config=has_config,
         config=config_data,
     )
+
+
+@app.route("/api/health")
+def api_health():
+    """Endpoint de salud para verificar que el addon funciona."""
+    return jsonify({"status": "ok"})
 
 
 @app.route("/api/setup", methods=["POST"])
@@ -147,6 +178,19 @@ def api_save():
         with open(config_file, "w") as f:
             json.dump(config, f, indent=2)
         logger.info("Configuración UTE guardada")
+
+        # Reiniciar daemon principal para aplicar cambios
+        import subprocess
+        try:
+            # Matar proceso main.py anterior si existe
+            subprocess.run(["pkill", "-f", "python3 /app/main.py"], capture_output=True)
+            # Iniciar nuevo proceso
+            subprocess.Popen(["python3", "/app/main.py"],
+                           env={**os.environ, "CREDENTIALS_PATH": CREDENTIALS_PATH})
+            logger.info("Daemon principal reiniciado")
+        except Exception as e:
+            logger.warning(f"No se pudo reiniciar daemon: {e}")
+
         return jsonify({"ok": True, "message": "Configuración guardada correctamente"})
     except Exception as e:
         logger.error(f"Error al guardar config: {e}")
