@@ -1,5 +1,5 @@
 name: "Ute2MQTT"
-version: "1.0.0"
+version: "1.1.0"
 slug: ute2mqtt
 description: >-
   Obtiene datos de consumo eléctrico de UTE (Uruguay) y los publica
