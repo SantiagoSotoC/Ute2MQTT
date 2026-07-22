@@ -1,48 +1,38 @@
-#!/bin/sh
+#!/usr/bin/with-contenv bashio
 # ==============================================================================
 # Ute2MQTT Home Assistant Add-on
 # ==============================================================================
 
-set -e
+# --- Leer configuración del addon ---
+TOPIC_PREFIX=$(bashio::config 'mqtt_topic_prefix')
+DISCOVERY_PREFIX=$(bashio::config 'mqtt_discovery_prefix')
+CRON_SCHEDULE=$(bashio::config 'cron_schedule')
+LOG_LEVEL=$(bashio::config 'log_level')
 
-# --- Leer TODA la configuración desde options.json de HA ---
-OPTIONS_FILE="/data/options.json"
-CONFIG_FILE="/data/ute2mqtt/ute_config.json"
+# --- Auto-detectar MQTT desde Home Assistant ---
+bashio::log.info "Detectando configuración MQTT de Home Assistant..."
 
-# Función para leer valor del JSON con python
-read_json() {
-    python3 -c "
-import json, sys
-try:
-    with open('$OPTIONS_FILE') as f:
-        d = json.load(f)
-    val = d.get('$1', '$2')
-    print(val if val is not None else '$2')
-except:
-    print('$2')
-"
-}
-
-if [ -f "$OPTIONS_FILE" ]; then
-    echo "Leyendo configuración desde $OPTIONS_FILE"
-    MQTT_HOST=$(read_json 'mqtt_broker' 'core-mosquitto')
-    MQTT_PORT=$(read_json 'mqtt_port' '1883')
-    MQTT_USER=$(read_json 'mqtt_username' '')
-    MQTT_PASS=$(read_json 'mqtt_password' '')
-    TOPIC_PREFIX=$(read_json 'mqtt_topic_prefix' 'UTE')
-    DISCOVERY_PREFIX=$(read_json 'mqtt_discovery_prefix' 'homeassistant')
-    CRON_SCHEDULE=$(read_json 'cron_schedule' '0 8 * * *')
-    LOG_LEVEL=$(read_json 'log_level' 'info')
+# Primero intentar auto-detectar de los servicios de HA
+if bashio::services.available mqtt ; then
+    MQTT_HOST=$(bashio::services mqtt 'host')
+    MQTT_PORT=$(bashio::services mqtt 'port')
+    MQTT_USER=$(bashio::services mqtt 'username')
+    MQTT_PASS=$(bashio::services mqtt 'password')
+    bashio::log.info "MQTT auto-detectado: ${MQTT_HOST}:${MQTT_PORT}"
 else
-    echo "Archivo de configuración no encontrado, usando defaults"
-    MQTT_HOST="core-mosquitto"
-    MQTT_PORT="1883"
-    MQTT_USER=""
-    MQTT_PASS=""
-    TOPIC_PREFIX="UTE"
-    DISCOVERY_PREFIX="homeassistant"
-    CRON_SCHEDULE="0 8 * * *"
-    LOG_LEVEL="info"
+    bashio::log.warning "Servicio MQTT no disponible, verificando configuración manual..."
+    # Intentar usar configuración manual del usuario
+    if bashio::config.has_value 'mqtt_host' ; then
+        MQTT_HOST=$(bashio::config 'mqtt_host')
+        MQTT_PORT=$(bashio::config 'mqtt_port')
+        MQTT_USER=$(bashio::config 'mqtt_username')
+        MQTT_PASS=$(bashio::config 'mqtt_password')
+        bashio::log.info "MQTT desde configuración: ${MQTT_HOST}:${MQTT_PORT}"
+    else
+        bashio::log.error "No se encontró configuración MQTT."
+        bashio::log.error "Instalá el addon Mosquitto o configurá MQTT manualmente."
+        bashio::exit.nok
+    fi
 fi
 
 # --- Exportar variables de entorno ---
@@ -55,7 +45,9 @@ export MQTT_DISCOVERY_PREFIX="${DISCOVERY_PREFIX}"
 export CRON_SCHEDULE="${CRON_SCHEDULE}"
 export LOG_LEVEL="${LOG_LEVEL}"
 export CREDENTIALS_PATH="/data/ute2mqtt"
-export TZ="${TZ:-America/Montevideo}"
+
+# Timezone
+export TZ=$(bashio::config 'timezone' 2>/dev/null || echo "America/Montevideo")
 
 # --- Asegurar directorio de datos ---
 mkdir -p "${CREDENTIALS_PATH}"
@@ -69,35 +61,35 @@ case "${LOG_LEVEL}" in
     *)       export PYTHON_LOG_LEVEL="INFO" ;;
 esac
 
-echo "========================================="
-echo "Ute2MQTT Add-on"
-echo "========================================="
-echo "MQTT Broker: ${MQTT_BROKER}:${MQTT_PORT}"
-echo "MQTT User: ${MQTT_USERNAME}"
-echo "Topic Prefix: ${MQTT_TOPIC_PREFIX}"
-echo "Discovery Prefix: ${MQTT_DISCOVERY_PREFIX}"
-echo "Cron: ${CRON_SCHEDULE}"
-echo "Log Level: ${LOG_LEVEL}"
-echo "========================================="
+bashio::log.info "========================================="
+bashio::log.info "Ute2MQTT Add-on"
+bashio::log.info "========================================="
+bashio::log.info "MQTT Broker: ${MQTT_BROKER}:${MQTT_PORT}"
+bashio::log.info "MQTT User: ${MQTT_USERNAME}"
+bashio::log.info "Topic Prefix: ${MQTT_TOPIC_PREFIX}"
+bashio::log.info "Discovery Prefix: ${MQTT_DISCOVERY_PREFIX}"
+bashio::log.info "Cron: ${CRON_SCHEDULE}"
+bashio::log.info "Log Level: ${LOG_LEVEL}"
+bashio::log.info "========================================="
 
 # --- Verificar si hay configuración UTE ---
 if [ -f "${CREDENTIALS_PATH}/ute_config.json" ]; then
-    echo "Configuración UTE encontrada. Iniciando daemon..."
+    bashio::log.info "Configuración UTE encontrada. Iniciando daemon..."
     python3 /app/main.py &
     MAIN_PID=$!
 else
-    echo "No se encontró configuración UTE."
-    echo "Abrí la Web UI para completar la configuración inicial."
+    bashio::log.warning "No se encontró configuración UTE."
+    bashio::log.warning "Abrí la Web UI para completar la configuración inicial."
 fi
 
 # --- Iniciar Web UI para configuración ---
-echo "Iniciando Web UI en puerto 8099..."
+bashio::log.info "Iniciando Web UI en puerto 8099..."
 python3 /app/web_ui/app.py &
 WEB_PID=$!
 
 # --- Capturar señales para cleanup ---
 cleanup() {
-    echo "Deteniendo Ute2MQTT..."
+    bashio::log.info "Deteniendo Ute2MQTT..."
     [ -n "$MAIN_PID" ] && kill "$MAIN_PID" 2>/dev/null
     [ -n "$WEB_PID" ] && kill "$WEB_PID" 2>/dev/null
     exit 0

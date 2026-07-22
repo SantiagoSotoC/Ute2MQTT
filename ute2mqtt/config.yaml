@@ -1,5 +1,5 @@
 name: "Ute2MQTT"
-version: "1.1.0"
+version: "1.1.1"
 slug: ute2mqtt
 description: >-
   Obtiene datos de consumo eléctrico de UTE (Uruguay) y los publica
@@ -11,6 +11,10 @@ arch:
   - armv7
   - armhf
   - i386
+init: false
+startup: services
+services:
+  - mqtt:need
 map:
   - type: addon_config
     read_only: false
@@ -19,19 +23,11 @@ ports:
 ingress: true
 webui: "http://[HOST]:[PORT:8099]"
 options:
-  mqtt_broker: "core-mosquitto"
-  mqtt_port: 1883
-  mqtt_username: ""
-  mqtt_password: ""
   mqtt_topic_prefix: "UTE"
   mqtt_discovery_prefix: "homeassistant"
   cron_schedule: "0 8 * * *"
   log_level: "info"
 schema:
-  mqtt_broker: str
-  mqtt_port: int
-  mqtt_username: str
-  mqtt_password: str
   mqtt_topic_prefix: str
   mqtt_discovery_prefix: str
   cron_schedule: str

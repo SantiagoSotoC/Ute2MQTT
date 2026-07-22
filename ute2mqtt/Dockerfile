@@ -1,15 +1,17 @@
-ARG BUILD_FROM=python:3.11-alpine
+ARG BUILD_FROM=ghcr.io/home-assistant/base:latest
 FROM $BUILD_FROM
 
 # Instalar dependencias del sistema
 RUN \
     apk add --no-cache \
+        python3 \
+        py3-pip \
         tzdata
 
 # Instalar dependencias Python
 COPY requirements.txt /tmp/requirements.txt
 RUN \
-    pip install --no-cache-dir \
+    pip install --no-cache-dir --break-system-packages \
         -r /tmp/requirements.txt
 
 # Copiar aplicación
