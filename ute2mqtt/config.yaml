@@ -19,8 +19,10 @@ ports:
 options:
   cron_schedule: "0 8 * * *"
   mqtt_topic_prefix: "UTE"
+  mqtt_discovery_prefix: "homeassistant"
   log_level: "info"
 schema:
   cron_schedule: str
   mqtt_topic_prefix: str
+  mqtt_discovery_prefix: str
   log_level: list(info|warning|error|debug)

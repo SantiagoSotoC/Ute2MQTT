@@ -5,6 +5,7 @@
 
 # --- Leer configuración del addon ---
 TOPIC_PREFIX=$(bashio::config 'mqtt_topic_prefix')
+DISCOVERY_PREFIX=$(bashio::config 'mqtt_discovery_prefix')
 CRON_SCHEDULE=$(bashio::config 'cron_schedule')
 LOG_LEVEL=$(bashio::config 'log_level')
 
@@ -29,7 +30,7 @@ export MQTT_PORT="${MQTT_PORT}"
 export MQTT_USERNAME="${MQTT_USER}"
 export MQTT_PASSWORD="${MQTT_PASS}"
 export MQTT_TOPIC_PREFIX="${TOPIC_PREFIX}"
-export MQTT_DISCOVERY_PREFIX="homeassistant"
+export MQTT_DISCOVERY_PREFIX="${DISCOVERY_PREFIX}"
 export CRON_SCHEDULE="${CRON_SCHEDULE}"
 export LOG_LEVEL="${LOG_LEVEL}"
 export CREDENTIALS_PATH="/config/ute2mqtt"
