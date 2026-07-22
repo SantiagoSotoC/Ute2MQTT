@@ -205,8 +205,19 @@
     <script>
         let selectedAccount = null;
 
-        // Detectar base URL para ingress
-        const API_BASE = window.location.pathname.replace(/\/$/, '') + '/api';
+        // Detectar si estamos en ingress (/app/{slug}/) o acceso directo
+        function getApiBase() {
+            const path = window.location.pathname;
+            // Si estamos en ingress, el path contiene /app/{slug}
+            const ingressMatch = path.match(/^(\/app\/[^/]+\/)/);
+            if (ingressMatch) {
+                return ingressMatch[1] + 'api';
+            }
+            // Acceso directo - usar /api
+            return '/api';
+        }
+
+        const API_BASE = getApiBase();
 
         async function apiCall(endpoint, options = {}) {
             const url = API_BASE + endpoint;
