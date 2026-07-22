@@ -5,38 +5,45 @@
 
 set -e
 
-# --- Leer configuración desde options.json de HA ---
+# --- Leer TODA la configuración desde options.json de HA ---
 OPTIONS_FILE="/data/options.json"
+CONFIG_FILE="/data/ute2mqtt/ute_config.json"
+
+# Función para leer valor del JSON con python
+read_json() {
+    python3 -c "
+import json, sys
+try:
+    with open('$OPTIONS_FILE') as f:
+        d = json.load(f)
+    val = d.get('$1', '$2')
+    print(val if val is not None else '$2')
+except:
+    print('$2')
+"
+}
 
 if [ -f "$OPTIONS_FILE" ]; then
     echo "Leyendo configuración desde $OPTIONS_FILE"
-
-    # Usar python para parsear JSON (disponible en la imagen base)
-    TOPIC_PREFIX=$(python3 -c "import json; f=open('$OPTIONS_FILE'); d=json.load(f); print(d.get('mqtt_topic_prefix', 'UTE'))")
-    DISCOVERY_PREFIX=$(python3 -c "import json; f=open('$OPTIONS_FILE'); d=json.load(f); print(d.get('mqtt_discovery_prefix', 'homeassistant'))")
-    CRON_SCHEDULE=$(python3 -c "import json; f=open('$OPTIONS_FILE'); d=json.load(f); print(d.get('cron_schedule', '0 8 * * *'))")
-    LOG_LEVEL=$(python3 -c "import json; f=open('$OPTIONS_FILE'); d=json.load(f); print(d.get('log_level', 'info'))")
+    MQTT_HOST=$(read_json 'mqtt_broker' 'core-mosquitto')
+    MQTT_PORT=$(read_json 'mqtt_port' '1883')
+    MQTT_USER=$(read_json 'mqtt_username' '')
+    MQTT_PASS=$(read_json 'mqtt_password' '')
+    TOPIC_PREFIX=$(read_json 'mqtt_topic_prefix' 'UTE')
+    DISCOVERY_PREFIX=$(read_json 'mqtt_discovery_prefix' 'homeassistant')
+    CRON_SCHEDULE=$(read_json 'cron_schedule' '0 8 * * *')
+    LOG_LEVEL=$(read_json 'log_level' 'info')
 else
     echo "Archivo de configuración no encontrado, usando defaults"
+    MQTT_HOST="core-mosquitto"
+    MQTT_PORT="1883"
+    MQTT_USER=""
+    MQTT_PASS=""
     TOPIC_PREFIX="UTE"
     DISCOVERY_PREFIX="homeassistant"
     CRON_SCHEDULE="0 8 * * *"
     LOG_LEVEL="info"
 fi
-
-# --- Obtener configuración MQTT ---
-# En HA addon, MQTT se obtiene de /data/options.json o del servicio MQTT
-# Buscar en /share/mosquitto o usar defaults
-
-if [ -f "/share/mosquitto/mosquitto.conf" ]; then
-    echo "Configuración MQTT encontrada en /share/mosquitto"
-fi
-
-# Default MQTT config (el usuario debe configurar en options.json)
-MQTT_HOST="${MQTT_BROKER:-core-mosquitto}"
-MQTT_PORT="${MQTT_PORT:-1883}"
-MQTT_USER="${MQTT_USERNAME:-}"
-MQTT_PASS="${MQTT_PASSWORD:-}"
 
 # --- Exportar variables de entorno ---
 export MQTT_BROKER="${MQTT_HOST}"
@@ -48,8 +55,6 @@ export MQTT_DISCOVERY_PREFIX="${DISCOVERY_PREFIX}"
 export CRON_SCHEDULE="${CRON_SCHEDULE}"
 export LOG_LEVEL="${LOG_LEVEL}"
 export CREDENTIALS_PATH="/data/ute2mqtt"
-
-# Timezone
 export TZ="${TZ:-America/Montevideo}"
 
 # --- Asegurar directorio de datos ---
@@ -68,6 +73,7 @@ echo "========================================="
 echo "Ute2MQTT Add-on"
 echo "========================================="
 echo "MQTT Broker: ${MQTT_BROKER}:${MQTT_PORT}"
+echo "MQTT User: ${MQTT_USERNAME}"
 echo "Topic Prefix: ${MQTT_TOPIC_PREFIX}"
 echo "Discovery Prefix: ${MQTT_DISCOVERY_PREFIX}"
 echo "Cron: ${CRON_SCHEDULE}"

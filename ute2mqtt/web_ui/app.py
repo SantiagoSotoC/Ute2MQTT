@@ -10,10 +10,8 @@ import logging
 import os
 import sys
 import secrets
-import hashlib
-import hmac
 
-from flask import Flask, render_template, request, jsonify, redirect, url_for, abort
+from flask import Flask, render_template, request, jsonify, abort
 
 sys.path.insert(0, "/app")
 
@@ -31,26 +29,6 @@ creds_manager = CredentialsManager(storage_path=CREDENTIALS_PATH)
 
 # Ingress token from HA
 INGRESS_TOKEN = os.environ.get("INGRESS_TOKEN", None)
-
-
-def check_ingress():
-    """Verifica token de ingress si está configurado."""
-    if not INGRESS_TOKEN:
-        return True  # No auth required (direct access)
-    token = request.headers.get("X-Ingress-Token") or request.args.get("token")
-    if not token:
-        return False
-    return hmac.compare_digest(token, INGRESS_TOKEN)
-
-
-@app.before_request
-def before_request():
-    """Middleware para verificar autenticación."""
-    # Si hay INGRESS_TOKEN configurado, verificar en cada request
-    if INGRESS_TOKEN and request.path != "/api/health":
-        token = request.headers.get("X-Ingress-Token") or request.args.get("token")
-        if not token or not hmac.compare_digest(token, INGRESS_TOKEN):
-            abort(401)
 
 
 @app.route("/")
@@ -75,18 +53,17 @@ def index():
 
 @app.route("/api/health")
 def api_health():
-    """Endpoint de salud para verificar que el addon funciona."""
+    """Endpoint de salud."""
     return jsonify({"status": "ok"})
 
 
 @app.route("/api/setup", methods=["POST"])
 def api_setup():
-    """
-    Paso 1: Autenticar con UTE y obtener cuentas.
-    Recibe: username (cédula), password
-    Retorna: lista de cuentas disponibles
-    """
+    """Autenticar con UTE y obtener cuentas."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "Request body inválido"}), 400
+
     username = data.get("username", "").strip()
     password = data.get("password", "")
 
@@ -94,12 +71,10 @@ def api_setup():
         return jsonify({"error": "Cédula y contraseña son requeridos"}), 400
 
     try:
-        # Obtener config OAuth
         oauth_config = UTEAuthenticator.fetch_setup_config()
         if not oauth_config:
             return jsonify({"error": "No se pudo obtener configuración OAuth de UTE"}), 502
 
-        # Autenticar
         auth = UTEAuthenticator(
             username=username,
             password=password,
@@ -108,7 +83,6 @@ def api_setup():
         if not auth.authenticate():
             return jsonify({"error": "Autenticación fallida. Verificá cédula y contraseña."}), 401
 
-        # Guardar tokens y credenciales
         creds_manager.set_oauth_config(
             unique_id=oauth_config["unique_id"],
             client_id=oauth_config["client_id"],
@@ -118,7 +92,6 @@ def api_setup():
         creds_manager.set_tokens(auth.access_token, auth.refresh_token, auth.expires_in)
         creds_manager.set_user_credentials(username, password)
 
-        # Obtener cuentas
         from ute.session import UTESession
         session = UTESession(creds_manager)
         client = session.get_client()
@@ -130,7 +103,6 @@ def api_setup():
         if not accounts:
             return jsonify({"error": "No se encontraron cuentas asociadas"}), 404
 
-        # Para cada cuenta, obtener servicios
         result = []
         for account in accounts:
             account_id = account.get("accountId") or account.get("id")
@@ -154,11 +126,10 @@ def api_setup():
 
 @app.route("/api/save", methods=["POST"])
 def api_save():
-    """
-    Paso 2: Guardar configuración seleccionada.
-    Recibe: account_id, service_id, service_point_id, tariff, schedule_code
-    """
+    """Guardar configuración seleccionada."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "Request body inválido"}), 400
 
     required = ["account_id", "service_id", "service_point_id", "tariff"]
     for field in required:
@@ -175,18 +146,19 @@ def api_save():
 
     config_file = os.path.join(CREDENTIALS_PATH, "ute_config.json")
     try:
+        os.makedirs(CREDENTIALS_PATH, exist_ok=True)
         with open(config_file, "w") as f:
             json.dump(config, f, indent=2)
         logger.info("Configuración UTE guardada")
 
-        # Reiniciar daemon principal para aplicar cambios
+        # Reiniciar daemon principal
         import subprocess
         try:
-            # Matar proceso main.py anterior si existe
             subprocess.run(["pkill", "-f", "python3 /app/main.py"], capture_output=True)
-            # Iniciar nuevo proceso
-            subprocess.Popen(["python3", "/app/main.py"],
-                           env={**os.environ, "CREDENTIALS_PATH": CREDENTIALS_PATH})
+            subprocess.Popen(
+                ["python3", "/app/main.py"],
+                env={**os.environ, "CREDENTIALS_PATH": CREDENTIALS_PATH}
+            )
             logger.info("Daemon principal reiniciado")
         except Exception as e:
             logger.warning(f"No se pudo reiniciar daemon: {e}")
