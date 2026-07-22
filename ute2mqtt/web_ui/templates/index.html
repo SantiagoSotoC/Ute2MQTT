@@ -169,7 +169,7 @@
     </div>
     {% endif %}
 
-    <div class="card" id="login-card" class="{% if has_config and config %}hidden{% endif %}">
+    <div class="card {% if has_config and config %}hidden{% endif %}" id="login-card">
         <h2>&#128274; Credenciales UTE</h2>
         <div id="login-error" class="alert alert-error hidden"></div>
 
