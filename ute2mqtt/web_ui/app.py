@@ -34,6 +34,11 @@ INGRESS_TOKEN = os.environ.get("INGRESS_TOKEN", None)
 @app.route("/")
 def index():
     """Página principal con formulario de setup."""
+    # Obtener prefijo de ingress para URLs relativas
+    ingress_path = request.headers.get("X-Ingress-Path", "")
+    if ingress_path:
+        ingress_path = ingress_path.rstrip("/") + "/"
+
     has_config = creds_manager.has_user_credentials()
     config_file = os.path.join(CREDENTIALS_PATH, "ute_config.json")
     config_data = None
@@ -48,6 +53,7 @@ def index():
         "index.html",
         has_config=has_config,
         config=config_data,
+        ingress_path=ingress_path,
     )
 
 

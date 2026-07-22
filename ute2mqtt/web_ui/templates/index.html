@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="{{ ingress_path or '/' }}">
     <title>Ute2MQTT - Configuración</title>
     <style>
         :root {
@@ -205,22 +206,8 @@
     <script>
         let selectedAccount = null;
 
-        // Detectar si estamos en ingress (/app/{slug}/) o acceso directo
-        function getApiBase() {
-            const path = window.location.pathname;
-            // Si estamos en ingress, el path contiene /app/{slug}
-            const ingressMatch = path.match(/^(\/app\/[^/]+\/)/);
-            if (ingressMatch) {
-                return ingressMatch[1] + 'api';
-            }
-            // Acceso directo - usar /api
-            return '/api';
-        }
-
-        const API_BASE = getApiBase();
-
         async function apiCall(endpoint, options = {}) {
-            const url = API_BASE + endpoint;
+            const url = './api' + endpoint;
             const res = await fetch(url, options);
             const text = await res.text();
             try {
