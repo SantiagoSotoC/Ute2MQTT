@@ -4,7 +4,7 @@ slug: ute2mqtt
 description: >-
   Obtiene datos de consumo eléctrico de UTE (Uruguay) y los publica
   a Home Assistant via MQTT con auto-descubrimiento.
-url: "https://github.com/rodrigocabraln/Ute2MQTT"
+url: "https://github.com/SantiagoSotoC/Ute2MQTT"
 arch:
   - amd64
   - aarch64
@@ -17,12 +17,20 @@ map:
 ports:
   8099/tcp: 8099
 options:
-  cron_schedule: "0 8 * * *"
+  mqtt_broker: "core-mosquitto"
+  mqtt_port: 1883
+  mqtt_username: ""
+  mqtt_password: ""
   mqtt_topic_prefix: "UTE"
   mqtt_discovery_prefix: "homeassistant"
+  cron_schedule: "0 8 * * *"
   log_level: "info"
 schema:
-  cron_schedule: str
+  mqtt_broker: str
+  mqtt_port: int
+  mqtt_username: str
+  mqtt_password: str
   mqtt_topic_prefix: str
   mqtt_discovery_prefix: str
+  cron_schedule: str
   log_level: list(info|warning|error|debug)

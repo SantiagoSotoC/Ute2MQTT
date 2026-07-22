@@ -24,7 +24,7 @@ logger = logging.getLogger("ute2mqtt.webui")
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
 
-CREDENTIALS_PATH = os.environ.get("CREDENTIALS_PATH", "/config/ute2mqtt")
+CREDENTIALS_PATH = os.environ.get("CREDENTIALS_PATH", "/data/ute2mqtt")
 creds_manager = CredentialsManager(storage_path=CREDENTIALS_PATH)
 
 
