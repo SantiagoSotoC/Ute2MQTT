@@ -1,0 +1,7 @@
+name: "Ute2MQTT"
+description: >-
+  Obtiene datos de consumo eléctrico de UTE (Uruguay) y los publica
+  a Home Assistant via MQTT con auto-descubrimiento.
+url: "https://github.com/SantiagoSotoC/Ute2MQTT"
+maintainer: "SantiagoSotoC"
+channel: stable
