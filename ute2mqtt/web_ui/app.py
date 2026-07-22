@@ -212,5 +212,32 @@ def api_reset():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/fetch", methods=["POST"])
+def api_fetch():
+    """Ejecuta un fetch de datos MQTT ahora mismo."""
+    config_file = os.path.join(CREDENTIALS_PATH, "ute_config.json")
+    if not os.path.exists(config_file):
+        return jsonify({"error": "No hay configuración UTE. Configurá primero las credenciales."}), 400
+
+    try:
+        import threading
+
+        def run_fetch():
+            try:
+                from main import Ute2MQTT
+                app_instance = Ute2MQTT()
+                app_instance.fetch_and_publish()
+            except Exception as e:
+                logger.exception(f"Error en fetch manual: {e}")
+
+        thread = threading.Thread(target=run_fetch, daemon=True)
+        thread.start()
+
+        return jsonify({"ok": True, "message": "Solicitud de datos enviada. Revisá los logs del addon."})
+    except Exception as e:
+        logger.exception("Error al iniciar fetch")
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8099, debug=False)

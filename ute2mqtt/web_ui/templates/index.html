@@ -166,7 +166,14 @@
             <strong>Schedule Code:</strong> {{ config.schedule_code }}<br>
             {% endif %}
         </div>
-        <button class="btn btn-danger" onclick="resetConfig()">Reconfigurar</button>
+        <div id="fetch-status" class="alert hidden" style="margin-bottom: 12px;"></div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="fetchNow()" style="flex: 1;">
+                <span id="fetch-text">&#128229; Obtener Datos MQTT</span>
+                <span id="fetch-spinner" class="spinner hidden"></span>
+            </button>
+            <button class="btn btn-danger" onclick="resetConfig()" style="flex: 1;">Reconfigurar</button>
+        </div>
     </div>
     {% endif %}
 
@@ -338,6 +345,36 @@
                 location.reload();
             } catch (e) {
                 alert('Error: ' + e.message);
+            }
+        }
+
+        async function fetchNow() {
+            const btn = document.getElementById('fetch-text');
+            const spinner = document.getElementById('fetch-spinner');
+            const status = document.getElementById('fetch-status');
+
+            btn.textContent = 'Obteniendo datos...';
+            spinner.classList.remove('hidden');
+            status.classList.add('hidden');
+
+            try {
+                const { ok, data } = await apiCall('/fetch', { method: 'POST' });
+
+                status.classList.remove('hidden');
+                if (ok) {
+                    status.className = 'alert alert-success';
+                    status.textContent = data.message || 'Solicitud enviada. Revisá los logs del addon.';
+                } else {
+                    status.className = 'alert alert-error';
+                    status.textContent = data.error || 'Error al obtener datos';
+                }
+            } catch (e) {
+                status.classList.remove('hidden');
+                status.className = 'alert alert-error';
+                status.textContent = 'Error: ' + e.message;
+            } finally {
+                btn.textContent = 'Obtener Datos MQTT';
+                spinner.classList.add('hidden');
             }
         }
 
