@@ -29,21 +29,9 @@
             margin: 0 auto;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 24px;
-            font-weight: 500;
-            color: var(--text);
-        }
-
-        .header p {
-            color: var(--text-secondary);
-            margin-top: 5px;
-        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { font-size: 24px; font-weight: 500; }
+        .header p { color: var(--text-secondary); margin-top: 5px; }
 
         .card {
             background: var(--card);
@@ -57,35 +45,26 @@
             font-size: 18px;
             font-weight: 500;
             margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
-        .form-group {
-            margin-bottom: 16px;
-        }
+        .form-group { margin-bottom: 16px; }
 
         .form-group label {
             display: block;
             font-size: 14px;
             font-weight: 500;
             margin-bottom: 6px;
-            color: var(--text);
         }
 
-        .form-group input,
-        .form-group select {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 12px;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 16px;
-            transition: border-color 0.2s;
         }
 
-        .form-group input:focus,
-        .form-group select:focus {
+        .form-group input:focus {
             outline: none;
             border-color: var(--primary);
         }
@@ -107,35 +86,17 @@
             font-size: 16px;
             font-weight: 500;
             cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
             width: 100%;
         }
 
         .btn:active { transform: scale(0.98); }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
+        .btn-primary { background: var(--primary); color: white; }
         .btn-primary:hover { background: var(--primary-dark); }
-
-        .btn-danger {
-            background: var(--error);
-            color: white;
-        }
-
+        .btn-danger { background: var(--error); color: white; }
         .btn-danger:hover { background: #b71c1c; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .accounts-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
+        .accounts-list { max-height: 300px; overflow-y: auto; }
 
         .account-item {
             border: 2px solid var(--border);
@@ -143,29 +104,12 @@
             padding: 16px;
             margin-bottom: 10px;
             cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
         }
 
-        .account-item:hover {
-            border-color: var(--primary);
-            background: #e1f5fe;
-        }
-
-        .account-item.selected {
-            border-color: var(--primary);
-            background: #e1f5fe;
-        }
-
-        .account-item .service-id {
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        .account-item .detail {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
+        .account-item:hover { border-color: var(--primary); background: #e1f5fe; }
+        .account-item.selected { border-color: var(--primary); background: #e1f5fe; }
+        .account-item .service-id { font-weight: 600; font-size: 16px; }
+        .account-item .detail { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
 
         .account-item .tariff-badge {
             display: inline-block;
@@ -187,23 +131,8 @@
             font-size: 14px;
         }
 
-        .alert-error {
-            background: #ffebee;
-            color: var(--error);
-            border: 1px solid #ffcdd2;
-        }
-
-        .alert-success {
-            background: #e8f5e9;
-            color: var(--success);
-            border: 1px solid #c8e6c9;
-        }
-
-        .alert-info {
-            background: #e1f5fe;
-            color: #01579b;
-            border: 1px solid #b3e5fc;
-        }
+        .alert-error { background: #ffebee; color: var(--error); border: 1px solid #ffcdd2; }
+        .alert-success { background: #e8f5e9; color: var(--success); border: 1px solid #c8e6c9; }
 
         .spinner {
             display: inline-block;
@@ -215,22 +144,8 @@
             animation: spin 0.8s linear infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
+        @keyframes spin { to { transform: rotate(360deg); } }
         .hidden { display: none; }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .status-ok { background: #e8f5e9; color: var(--success); }
-        .status-warn { background: #fff3e0; color: var(--warning); }
     </style>
 </head>
 <body>
@@ -239,13 +154,10 @@
         <p>Configuración del addon</p>
     </div>
 
-    <!-- Estado actual -->
     {% if has_config and config %}
     <div class="card" id="status-card">
         <h2>&#9989; Configuración Activa</h2>
-        <div class="alert alert-success">
-            El addon está configurado y funcionando.
-        </div>
+        <div class="alert alert-success">El addon está configurado y funcionando.</div>
         <div style="margin-bottom: 12px;">
             <strong>Servicio:</strong> {{ config.service_id }}<br>
             <strong>Tarifa:</strong> {{ config.tariff }}<br>
@@ -257,7 +169,6 @@
     </div>
     {% endif %}
 
-    <!-- Formulario de login -->
     <div class="card" id="login-card" class="{% if has_config and config %}hidden{% endif %}">
         <h2>&#128274; Credenciales UTE</h2>
         <div id="login-error" class="alert alert-error hidden"></div>
@@ -279,13 +190,10 @@
         </button>
     </div>
 
-    <!-- Selección de cuenta -->
     <div class="card hidden" id="accounts-card">
         <h2>&#128203; Seleccionar Servicio</h2>
         <div id="accounts-error" class="alert alert-error hidden"></div>
-
         <div class="accounts-list" id="accounts-list"></div>
-
         <div style="margin-top: 16px;">
             <button class="btn btn-primary" id="btn-save" onclick="saveConfig()" disabled>
                 <span id="save-text">Guardar Configuración</span>
@@ -296,6 +204,20 @@
 
     <script>
         let selectedAccount = null;
+
+        // Detectar base URL para ingress
+        const API_BASE = window.location.pathname.replace(/\/$/, '') + '/api';
+
+        async function apiCall(endpoint, options = {}) {
+            const url = API_BASE + endpoint;
+            const res = await fetch(url, options);
+            const text = await res.text();
+            try {
+                return { ok: res.ok, status: res.status, data: JSON.parse(text) };
+            } catch (e) {
+                return { ok: false, status: res.status, data: { error: 'Respuesta inválida del servidor' } };
+            }
+        }
 
         async function doLogin() {
             const username = document.getElementById('username').value.trim();
@@ -316,15 +238,13 @@
             hideError('login-error');
 
             try {
-                const res = await fetch('/api/setup', {
+                const { ok, data } = await apiCall('/setup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
                 });
 
-                const data = await res.json();
-
-                if (!res.ok) {
+                if (!ok) {
                     showError('login-error', data.error || 'Error al conectar');
                     return;
                 }
@@ -347,8 +267,7 @@
 
         function showAccounts(accounts) {
             document.getElementById('login-card').classList.add('hidden');
-            const card = document.getElementById('accounts-card');
-            card.classList.remove('hidden');
+            document.getElementById('accounts-card').classList.remove('hidden');
 
             const list = document.getElementById('accounts-list');
             list.innerHTML = '';
@@ -365,8 +284,6 @@
                     <div class="detail">${acc.address || 'Sin dirección'}</div>
                     <span class="tariff-badge ${tariffClass}">${acc.tariff || 'N/A'}</span>
                 `;
-
-                div.dataset.index = i;
                 list.appendChild(div);
             });
 
@@ -374,9 +291,7 @@
         }
 
         function selectAccount(index, el) {
-            document.querySelectorAll('.account-item').forEach(item => {
-                item.classList.remove('selected');
-            });
+            document.querySelectorAll('.account-item').forEach(item => item.classList.remove('selected'));
             el.classList.add('selected');
             selectedAccount = window._accounts[index];
             document.getElementById('btn-save').disabled = false;
@@ -395,15 +310,13 @@
             hideError('accounts-error');
 
             try {
-                const res = await fetch('/api/save', {
+                const { ok, data } = await apiCall('/save', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(selectedAccount)
                 });
 
-                const data = await res.json();
-
-                if (!res.ok) {
+                if (!ok) {
                     showError('accounts-error', data.error || 'Error al guardar');
                     return;
                 }
@@ -423,7 +336,7 @@
             if (!confirm('¿Estás seguro? Se eliminará toda la configuración.')) return;
 
             try {
-                await fetch('/api/reset', { method: 'POST' });
+                await apiCall('/reset', { method: 'POST' });
                 location.reload();
             } catch (e) {
                 alert('Error: ' + e.message);
