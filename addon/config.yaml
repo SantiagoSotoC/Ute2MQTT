@@ -1,0 +1,26 @@
+name: "Ute2MQTT"
+version: "1.0.0"
+slug: ute2mqtt
+description: >-
+  Obtiene datos de consumo eléctrico de UTE (Uruguay) y los publica
+  a Home Assistant via MQTT con auto-descubrimiento.
+url: "https://github.com/rodrigocabraln/Ute2MQTT"
+arch:
+  - amd64
+  - aarch64
+  - armv7
+  - armhf
+  - i386
+map:
+  - type: addon_config
+    read_only: false
+ports:
+  8099/tcp: 8099
+options:
+  cron_schedule: "0 8 * * *"
+  mqtt_topic_prefix: "UTE"
+  log_level: "info"
+schema:
+  cron_schedule: str
+  mqtt_topic_prefix: str
+  log_level: list(info|warning|error|debug)
